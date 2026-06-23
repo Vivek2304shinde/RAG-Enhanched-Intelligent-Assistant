@@ -122,9 +122,21 @@ class ETLPipeline:
         # Upload all points to Qdrant
         qdrant_client.upsert_points(qdrant_points)
         
+        # ====== NEW: Graph extraction (before return) ======
+        if settings.enable_graph_extraction:
+            try:
+                from src.graph.graph_pipeline import graph_pipeline
+                logger.info(f"Starting graph extraction for doc {doc_id}")
+                graph_pipeline.process_document(doc_id)
+                logger.info(f"Graph extraction completed for doc {doc_id}")
+            except Exception as e:
+                logger.error(f"Graph extraction failed for doc {doc_id}: {e}")
+                # Continue processing – don't break the ETL
+        # ===================================================
+        
         elapsed = time.time() - start_time
         logger.info(f"Finished processing {pdf_path} in {elapsed:.2f}s. {total_chunks} chunks inserted.")
-        return doc_id
+        return doc_id   # <-- return after graph extraction
     
     def process_folder(self, folder_path: str = None):
         """Process all PDFs in a folder."""

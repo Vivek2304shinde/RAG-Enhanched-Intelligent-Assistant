@@ -1,0 +1,6 @@
+[
+  {"label": "SCHEME", "pattern": [{"LOWER": "pradhan"}, {"LOWER": "mantri"}, {"LOWER": "mudra"}, {"LOWER": "yojana"}]},
+  {"label": "SCHEME", "pattern": [{"LOWER": "pmegp"}]},
+  {"label": "MINISTRY", "pattern": [{"LOWER": "ministry"}, {"LOWER": "of"}, {"LOWER": "micro"}, {"LOWER": "small"}, {"LOWER": "medium"}, {"LOWER": "enterprises"}]}
+  
+]
