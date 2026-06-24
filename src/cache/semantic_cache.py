@@ -28,9 +28,10 @@ class SemanticCache:
                 )
 
                 self.redis_client = None
-            logger.info("Redis cache initialized")
+            
         # For similarity check, we'll compute embeddings of query and store them
         self.embed_model = SentenceTransformer('BAAI/bge-m3')
+        # self.embed_model = None
         self.similarity_threshold = 0.85
 
     def _get_embedding(self, text: str) -> np.ndarray:
