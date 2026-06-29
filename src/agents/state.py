@@ -5,6 +5,7 @@ from typing_extensions import TypedDict
 class AgentState(TypedDict):
     # User input
     query: str
+    conversation_history: Optional[List[Dict[str, str]]]
 
     # Query understanding
     query_plan: Optional[Dict]          # type, entities, filters, time range
@@ -36,3 +37,5 @@ class AgentState(TypedDict):
     iteration: int
     max_iterations: int
     error: Optional[str]
+
+    conversation_history: Optional[List[Dict]]

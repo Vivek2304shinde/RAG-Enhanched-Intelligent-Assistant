@@ -128,12 +128,17 @@ def synthesizer_node(state: AgentState) -> Dict[str, Any]:
         return {"draft_answer": "No information found."}
     # Prepare a synthesis prompt
     context = "\n\n---\n\n".join([c["text"][:1000] for c in chunks[:5]])
+    history = state.get("conversation_history", [])
+    history_text = "\n".join([f"{m['role'].capitalize()}: {m['content']}" for m in history[-3:]])  # last 3 turns
     prompt = f"""
 You are a financial research assistant. Synthesize the following excerpts to answer the user query.
 Provide a concise, well‑structured answer. If the excerpts mention contradictions, note them.
 Cite the source by using [1], [2], etc. corresponding to the order of excerpts.
 
 Query: {state["query"]}
+Conversation so far:
+{history_text}
+New query: {state["query"]}
 
 Excerpts:
 {context}

@@ -12,6 +12,9 @@ from src.agents.runner import run_agent
 from src.etl.pipeline import ETLPipeline
 from src.utils.logging import logger
 import uvicorn
+from src.speech.tts import tts
+from src.speech.asr import asr
+from src.agents.memory import ConversationMemory
 
 app = FastAPI(title="Bharat Financial Intelligence Agent", version="1.0")
 
@@ -26,6 +29,8 @@ ingestion_latency = Histogram("bfia_ingestion_latency_seconds", "Ingestion laten
 # ---------- Endpoints ----------
 class QueryRequest(BaseModel):
     query: str
+    history: Optional[List[Dict[str, str]]] = None  # new
+
 
 class Citation(BaseModel):
     doc_id: str
@@ -46,7 +51,16 @@ async def handle_query(req: QueryRequest):
     # Measure latency
     start = time.time()
     try:
-        result = run_agent(req.query)
+        # Create memory from history if provided
+        memory = ConversationMemory()
+        if req.history:
+            for msg in req.history:
+                if msg["role"] == "user":
+                    memory.add_user_message(msg["content"])
+                elif msg["role"] == "assistant":
+                    memory.add_assistant_message(msg["content"])
+        # Run the agent with memory
+        result = run_agent(req.query, memory)
         # Set hallucination gauge (latest value)
         hallucination_gauge.set(result.get("hallucination_score", 0.0))
         citations = [
@@ -104,6 +118,40 @@ async def ingest_document(
 @app.get("/metrics")
 async def metrics():
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+# src/api/app.py (add these endpoints)
+
+from fastapi import File, UploadFile
+from src.speech.tts import tts
+from src.speech.asr import asr
+
+@app.post("/tts")
+async def text_to_speech(text: str = Form(...)):
+    audio_bytes = tts.synthesize(text)
+    return Response(audio_bytes, media_type="audio/mpeg" if not tts.use_coqui else "audio/wav")
+
+@app.post("/asr")
+async def speech_to_text(audio: UploadFile = File(...)):
+    audio_bytes = await audio.read()
+    text = asr.transcribe(audio_bytes)
+    return {"text": text}
+
+# src/api/app.py (add these endpoints)
+
+from fastapi import File, UploadFile
+from src.speech.tts import tts
+from src.speech.asr import asr
+
+@app.post("/tts")
+async def text_to_speech(text: str = Form(...)):
+    audio_bytes = tts.synthesize(text)
+    return Response(audio_bytes, media_type="audio/mpeg" if not tts.use_coqui else "audio/wav")
+
+@app.post("/asr")
+async def speech_to_text(audio: UploadFile = File(...)):
+    audio_bytes = await audio.read()
+    text = asr.transcribe(audio_bytes)
+    return {"text": text}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
